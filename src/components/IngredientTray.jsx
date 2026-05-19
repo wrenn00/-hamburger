@@ -57,14 +57,15 @@ function IngredientCard({ def, onAdd, disabled }) {
       {/* 툴팁 */}
       {hovered && !disabled && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg text-xs whitespace-nowrap z-50 pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs whitespace-nowrap z-50 pointer-events-none shadow-md"
           style={{
             bottom: '100%',
-            marginBottom: 6,
-            background: 'rgba(60,30,0,0.85)',
+            marginBottom: 8,
+            background: 'rgba(60,30,0,0.88)',
             color: '#FFF',
             fontFamily: "'Jua', sans-serif",
             backdropFilter: 'blur(4px)',
+            lineHeight: 1.6,
           }}
         >
           {def.name} 추가 ✨

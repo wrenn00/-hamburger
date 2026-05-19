@@ -102,17 +102,21 @@ export function Tomato({ height = 0.10, color = '#E53935' }) {
   )
 }
 
-// ── 양파링 — 눕힌 torus 3개 (rotation으로 수평) ─────────────────────────────
-export function Onion({ height = 0.10, color = '#F8BBD9' }) {
-  const tubeR = height / 2  // tube 지름 = height, 중심 y = height/2
+// ── 양파링 — 도넛 2개 (바깥 + 안쪽), 살구빛 베이지 ──────────────────────────
+export function Onion({ height = 0.10 }) {
+  const tubeR = height / 2  // 튜브 반지름 = height/2 → 전체 두께 = height
   return (
-    <group>
-      {[0.70, 0.48, 0.28].map((r, i) => (
-        <mesh key={i} position={[0, height / 2, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-          <torusGeometry args={[r, tubeR, 8, 32]} />
-          <meshStandardMaterial color={color} roughness={0.60} transparent opacity={0.88} />
-        </mesh>
-      ))}
+    <group position={[0, height / 2, 0]}>
+      {/* 바깥 링 */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <torusGeometry args={[0.90, tubeR, 16, 32]} />
+        <meshStandardMaterial color="#F5E6D3" roughness={0.50} />
+      </mesh>
+      {/* 안쪽 링 */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.50, tubeR * 0.80, 16, 32]} />
+        <meshStandardMaterial color="#EBD5BD" roughness={0.50} />
+      </mesh>
     </group>
   )
 }
@@ -155,19 +159,43 @@ export function Bacon({ height = 0.08, color = '#EF9A9A' }) {
   )
 }
 
-// ── 계란프라이 — 흰자 원기둥 + 노른자 구체 ──────────────────────────────────
+// ── 계란프라이 — 흰자(큰 납작 원) + 불규칙 가장자리 + 노른자(볼록 구체) ────────
+// Math.random() 사용 시 매 렌더마다 달라지지 않도록 고정 오프셋 사용
+const EGG_BLOB_ANGLES = [0, 1, 2, 3, 4].map((i) => (i / 5) * Math.PI * 2 + 0.3)
+const EGG_BLOB_RADII  = [1.05, 1.15, 1.00, 1.18, 1.08]
+
 export function Egg({ height = 0.15 }) {
   const whiteH = height * 0.55
-  const yolkR  = (height - whiteH) / 2  // yolk: top = whiteH + 2*yolkR = height ✓
+  const blobH  = height * 0.60
+  const yolkR  = height * 0.42
   return (
     <group>
+      {/* 흰자 본체 */}
       <mesh position={[0, whiteH / 2, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.70, 0.70, whiteH, 32]} />
-        <meshStandardMaterial color="#FFFDE7" roughness={0.50} />
+        <cylinderGeometry args={[1.10, 1.10, whiteH, 32]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.60} />
       </mesh>
-      <mesh position={[0, whiteH + yolkR, 0]} castShadow>
-        <sphereGeometry args={[yolkR, 14, 14]} />
-        <meshStandardMaterial color="#FFC107" roughness={0.40} emissive="#FF8F00" emissiveIntensity={0.2} />
+
+      {/* 불규칙 가장자리 블롭 */}
+      {EGG_BLOB_ANGLES.map((angle, i) => {
+        const r = EGG_BLOB_RADII[i]
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(angle) * r, whiteH / 2, Math.sin(angle) * r]}
+            scale={[0.30, blobH, 0.30]}
+            castShadow
+          >
+            <sphereGeometry args={[1, 10, 10]} />
+            <meshStandardMaterial color="#FFFFFF" roughness={0.60} />
+          </mesh>
+        )
+      })}
+
+      {/* 노른자 — 흰자 위에 봉긋 */}
+      <mesh position={[0, whiteH + yolkR * 0.55, 0]} castShadow>
+        <sphereGeometry args={[yolkR, 24, 24]} />
+        <meshStandardMaterial color="#FFC93C" roughness={0.40} emissive="#FFA500" emissiveIntensity={0.10} />
       </mesh>
     </group>
   )

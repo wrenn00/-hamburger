@@ -58,7 +58,7 @@ export const INGREDIENTS = [
     modelPath: assetPath('/models/golden_ham.glb'),
     cardBg: '#FFFBEA', cardBorder: '#FFD700', isHamster: true },
 
-  { id: 'jungarian_ham',   name: '정가리안', emoji: '🐹',
+  { id: 'jungarian_ham',   name: '정글리안', emoji: '🐹',
     category: 'hamster', height: 1.0, color: '#A8D8A8', meshType: 'hamster',
     modelPath: assetPath('/models/jungarian_ham.glb'),
     cardBg: '#F0FFF4', cardBorder: '#FFD700', isHamster: true },

@@ -33,7 +33,7 @@ export const useHamsterStore = create((set, get) => ({
   selectedHamster: null,
   hamsters: [
     { id: 'golden_ham',      name: '골든 햄스터',    title: '클래식 버거 셰프',     emoji: '👨‍🍳', file: assetPath('/models/golden_ham.glb'),      color: '#FFB347', bgFrom: '#FFF3CD', bgTo: '#FFD580' },
-    { id: 'jungarian_ham',   name: '정가리안 햄스터', title: '미니 슬라이더 전문가', emoji: '🍔',  file: assetPath('/models/jungarian_ham.glb'),   color: '#A8D8A8', bgFrom: '#D4EDDA', bgTo: '#82C882' },
+    { id: 'jungarian_ham',   name: '정글리안 햄스터', title: '미니 슬라이더 전문가', emoji: '🍔',  file: assetPath('/models/jungarian_ham.glb'),   color: '#A8D8A8', bgFrom: '#D4EDDA', bgTo: '#82C882' },
     { id: 'pearl_ham',       name: '펄 햄스터',      title: '디저트 버거 마스터',   emoji: '🍰',  file: assetPath('/models/pearl_ham.glb'),       color: '#F4ACB7', bgFrom: '#FCE4EC', bgTo: '#F48FB1' },
     { id: 'roborovskii_ham', name: '로보로브스키',    title: '스피드 패스트푸드',    emoji: '⚡',  file: assetPath('/models/roborovskii_ham.glb'), color: '#B39DDB', bgFrom: '#EDE7F6', bgTo: '#9575CD' },
   ],
