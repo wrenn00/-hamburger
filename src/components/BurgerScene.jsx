@@ -1,8 +1,44 @@
-import { Suspense } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Suspense, useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, ContactShadows, Environment } from '@react-three/drei'
+import { useBurgerStore } from '../store/useBurgerStore'
 import Burger from './Burger'
 
+const PLATE_TOP = 0.08  // CuttingBoard 윗면 (height 0.16 / 2)
+
+// ── 카메라 target을 버거 세로 중앙으로 부드럽게 추적 ──────────────────────
+// OrbitControls.target.y를 버거 높이 절반으로 lerp
+// → 재료가 쌓일수록 카메라가 자동으로 올라가며 전체 스택을 유지
+function CameraRig() {
+  const controlsRef = useRef()
+  const stack = useBurgerStore((s) => s.stack)
+
+  const totalH = stack.reduce((sum, { def }) => sum + def.height, 0)
+  const midY   = PLATE_TOP + totalH / 2  // 버거 세로 중앙
+
+  useFrame(() => {
+    if (!controlsRef.current) return
+    // lerp speed 0.06 — 부드럽고 빠른 추적
+    controlsRef.current.target.y +=
+      (midY - controlsRef.current.target.y) * 0.06
+    controlsRef.current.update()
+  })
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enablePan={false}
+      minDistance={3}
+      maxDistance={16}
+      minPolarAngle={Math.PI / 10}
+      maxPolarAngle={Math.PI / 2.05}
+      autoRotate
+      autoRotateSpeed={0.7}
+    />
+  )
+}
+
+// ── 원형 나무 도마 ──────────────────────────────────────────────────────────
 function CuttingBoard() {
   return (
     <group>
@@ -39,11 +75,11 @@ export default function BurgerScene() {
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.1}
-        shadow-camera-far={30}
-        shadow-camera-left={-5}
-        shadow-camera-right={5}
-        shadow-camera-top={5}
-        shadow-camera-bottom={-5}
+        shadow-camera-far={40}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
         color="#FFE8C8"
       />
       <pointLight position={[-4, 5, -3]} intensity={0.4} color="#FFD580" />
@@ -62,15 +98,8 @@ export default function BurgerScene() {
         <Environment preset="sunset" />
       </Suspense>
 
-      <OrbitControls
-        enablePan={false}
-        minDistance={3}
-        maxDistance={12}
-        minPolarAngle={Math.PI / 10}
-        maxPolarAngle={Math.PI / 2.05}
-        autoRotate
-        autoRotateSpeed={0.7}
-      />
+      {/* useFrame을 쓰는 컴포넌트는 Canvas 안에서만 사용 가능 */}
+      <CameraRig />
     </Canvas>
   )
 }
