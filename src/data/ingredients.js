@@ -6,16 +6,16 @@ import { assetPath } from '../utils/assetPath'
 
 export const INGREDIENTS = [
   // ── 빵 ──────────────────────────────────────────────────────────────────────
-  // Bun.jsx: 실린더(CYLH=0.12) + 반구(R=0.40) → 총 0.52
+  // Bun.jsx bottom: 실린더(cylH=0.25) + 타원 돔(domeH=0.10) → 총 0.35
   {
     id: 'bun_bottom', name: '빵 아래', emoji: '🍞',
-    category: 'base', height: 0.52, color: '#D4936A',
+    category: 'base', height: 0.35, color: '#D4A574',
     meshType: 'bun_bottom', cardBg: '#FFF3E0', cardBorder: '#FFCC80',
   },
-  // Bun.jsx: 실린더(CYLH=0.12) + 큰 반구(R=0.50) → 총 0.62
+  // Bun.jsx top: 타원 반구만 (cylinder 없음), scaleY=0.5 → 높이 0.60
   {
     id: 'bun_top', name: '빵 위', emoji: '🍞',
-    category: 'base', height: 0.62, color: '#C8834A',
+    category: 'base', height: 0.60, color: '#D4A574',
     meshType: 'bun_top', cardBg: '#FFF3E0', cardBorder: '#FFCC80',
   },
 
