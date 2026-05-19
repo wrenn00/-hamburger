@@ -1,41 +1,30 @@
-// [카메라 전략]
-// - 초기: position(0, 3, 10), target(0, 1.0, 0)으로 도마+버거 전체를 커버
-// - 버거가 쌓일수록 카메라 target.y를 살짝 올리고 (도마 보이게 1/3 수준 유지)
-//   동시에 카메라와 target의 거리(radius)를 늘려서 줌아웃
-// - 이렇게 하면 도마가 화면 아래에 고정되고 버거가 그 위로 자연스럽게 쌓임
+// 도마 윗면 = y=0 (cylinder h=0.20, center y=-0.10)
+// 재료 스택은 y=0 에서 위로 쌓임
 
 import { Suspense, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, ContactShadows, Environment } from '@react-three/drei'
 import { useBurgerStore } from '../store/useBurgerStore'
-import Burger, { PLATE_TOP } from './Burger'
-import * as THREE from 'three'
+import Burger from './Burger'
 
-// ── 카메라 컨트롤러 ────────────────────────────────────────────────────────
+// ── 카메라: target=버거 1/4 높이, 거리는 버거 높이에 비례 줌아웃 ─────────────
 function CameraRig() {
   const controlsRef = useRef()
   const stack = useBurgerStore((s) => s.stack)
 
-  const totalH  = PLATE_TOP + stack.reduce((sum, { def }) => sum + def.height, 0)
-  // target은 버거 높이의 1/4 지점 (도마가 항상 화면 하단에 보임)
-  const targetY = Math.max(0.5, totalH * 0.28)
-  // 거리: 버거 높이에 비례해서 줌아웃
+  const totalH  = stack.reduce((sum, { def }) => sum + def.height, 0)
+  const targetY = Math.max(0.4, totalH * 0.28)
   const radius  = Math.max(7, totalH * 2.0 + 4)
 
   useFrame(() => {
     if (!controlsRef.current) return
     const c = controlsRef.current
-
-    // 1) target.y lerp
     c.target.y += (targetY - c.target.y) * 0.05
-
-    // 2) 카메라 → target 방향 벡터 유지하면서 거리 조정
     const cam    = c.object
     const offset = cam.position.clone().sub(c.target)
     const cur    = offset.length()
     const next   = cur + (radius - cur) * 0.04
     cam.position.copy(c.target.clone().add(offset.normalize().multiplyScalar(next)))
-
     c.update()
   })
 
@@ -53,22 +42,24 @@ function CameraRig() {
   )
 }
 
-// ── 원형 나무 도마 ──────────────────────────────────────────────────────────
-// cylinder height=0.16, center y=0 → 윗면 y=0.08 = PLATE_TOP
+// ── 원형 도마 — 윗면 정확히 y=0 ─────────────────────────────────────────────
+// cylinder h=0.20, center y=-0.10 → top = 0, bottom = -0.20
 function CuttingBoard() {
   return (
     <group>
-      <mesh receiveShadow>
-        <cylinderGeometry args={[2.4, 2.2, 0.16, 64]} />
+      <mesh position={[0, -0.10, 0]} receiveShadow>
+        <cylinderGeometry args={[2.4, 2.2, 0.20, 64]} />
         <meshStandardMaterial color="#8B6340" roughness={0.88} />
       </mesh>
+      {/* 나무결 링 — 윗면(y=0) */}
       {[0.6, 1.1, 1.6, 2.0].map((r, i) => (
-        <mesh key={i} position={[0, 0.082, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh key={i} position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[r, r + 0.04, 64]} />
           <meshStandardMaterial color="#6B4A28" roughness={0.9} transparent opacity={0.35} />
         </mesh>
       ))}
-      <mesh position={[2.6, 0, 0]} castShadow receiveShadow rotation={[0, 0, Math.PI / 2]}>
+      {/* 손잡이 */}
+      <mesh position={[2.6, -0.10, 0]} castShadow receiveShadow rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.25, 0.30, 1.0, 24]} />
         <meshStandardMaterial color="#7A5530" roughness={0.85} />
       </mesh>
@@ -80,7 +71,6 @@ export default function BurgerScene() {
   return (
     <Canvas
       shadows
-      // 도마 + 15층 버거가 모두 보이는 초기 위치
       camera={{ position: [0, 3, 10], fov: 45 }}
       gl={{ alpha: true }}
       style={{ width: '100%', height: '100%' }}
@@ -104,8 +94,9 @@ export default function BurgerScene() {
       <Suspense fallback={null}>
         <CuttingBoard />
         <Burger />
+        {/* 그림자는 도마 윗면(y=0) 위에 */}
         <ContactShadows
-          position={[0, 0.09, 0]}
+          position={[0, 0, 0]}
           opacity={0.4}
           scale={6}
           blur={2.5}
