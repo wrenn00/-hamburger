@@ -43,11 +43,12 @@ function IngredientLayer({ uid, def, baseY }) {
       ref={groupRef}
       onClick={(e) => { e.stopPropagation(); removeIngredient(uid) }}
     >
-      {/* 컴포넌트는 항상 로컬 y=0부터 시작 */}
+      {/* uid는 HamsterTopping이 측정 후 store 업데이트에 사용 */}
       <Component
         height={def.height}
         color={def.color}
         modelPath={def.modelPath}
+        uid={uid}
       />
     </group>
   )

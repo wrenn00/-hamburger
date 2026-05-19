@@ -5,9 +5,10 @@
 // 부모 group이 world position을 담당 (스택 baseY)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo } from 'react'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { useBurgerStore } from '../../store/useBurgerStore'
 
 const BUN_R = 1.20  // 빵 가로 반지름 (모든 재료 폭 기준)
 
@@ -172,38 +173,55 @@ export function Egg({ height = 0.15 }) {
   )
 }
 
-// ── 햄스터 GLB — bbox 정규화 → height에 맞춤, 바닥 y=0 ──────────────────────
-function HamsterModel({ scene, height }) {
-  const normalized = useMemo(() => {
-    const cloned = scene.clone(true)
+// ── 햄스터 GLB ───────────────────────────────────────────────────────────────
+// 스케일 기준: 가로폭(max of x,z) → TARGET_WIDTH
+// 스케일 후 실제 Y 높이 측정 → store 업데이트 → Burger.jsx 스택 자동 보정
+const TARGET_WIDTH = 2.2  // 빵 지름(2.4)에 근접한 가로폭
 
-    cloned.traverse(child => {
+function HamsterModel({ scene, uid }) {
+  const updateHeight = useBurgerStore((s) => s.updateStackItemHeight)
+
+  const { cloned, actualHeight } = useMemo(() => {
+    const c = scene.clone(true)
+
+    c.traverse(child => {
       if (child.isMesh) { child.castShadow = true; child.receiveShadow = true }
     })
 
-    // 스케일 초기화 후 측정
-    cloned.scale.set(1, 1, 1)
-    cloned.position.set(0, 0, 0)
-    const box  = new THREE.Box3().setFromObject(cloned)
-    const size = box.getSize(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z)
-    if (maxDim > 0) cloned.scale.setScalar(height / maxDim)
+    // 스케일 초기화
+    c.scale.set(1, 1, 1)
+    c.position.set(0, 0, 0)
+
+    const box1 = new THREE.Box3().setFromObject(c)
+    const size = box1.getSize(new THREE.Vector3())
+
+    // 가로폭(x, z 중 큰 값) 기준으로 스케일 → 빵 폭에 맞춤
+    const horizDim = Math.max(size.x, size.z)
+    if (horizDim > 0) c.scale.setScalar(TARGET_WIDTH / horizDim)
+
+    // 스케일 후 실제 높이 측정
+    const box2 = new THREE.Box3().setFromObject(c)
+    const measuredH = box2.max.y - box2.min.y
 
     // 바닥을 y=0으로 정렬
-    box.setFromObject(cloned)
-    cloned.position.y = -box.min.y
+    c.position.y = -box2.min.y
 
-    return cloned
-  }, [scene, height])
+    return { cloned: c, actualHeight: measuredH }
+  }, [scene])
 
-  return <primitive object={normalized} />
+  // 실제 높이를 store에 보고 → Burger.jsx 스택 재계산 → 위 재료 spring 이동
+  useEffect(() => {
+    if (actualHeight > 0 && uid) updateHeight(uid, actualHeight)
+  }, [actualHeight]) // eslint-disable-line
+
+  return <primitive object={cloned} />
 }
 
-export function HamsterTopping({ height = 0.60, modelPath }) {
+export function HamsterTopping({ height = 1.0, modelPath, uid }) {
   const { scene } = useGLTF(modelPath)
   return (
     <Suspense fallback={null}>
-      <HamsterModel scene={scene} height={height} />
+      <HamsterModel scene={scene} uid={uid} />
     </Suspense>
   )
 }

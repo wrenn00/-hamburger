@@ -54,22 +54,22 @@ export const INGREDIENTS = [
 
   // 햄스터 ───────────────────────────────────────────────────────────────────
   { id: 'golden_ham',      name: '골든 햄스터',  emoji: '🐹',
-    category: 'hamster', height: 0.60, color: '#FFB347', meshType: 'hamster',
+    category: 'hamster', height: 1.0, color: '#FFB347', meshType: 'hamster',
     modelPath: assetPath('/models/golden_ham.glb'),
     cardBg: '#FFFBEA', cardBorder: '#FFD700', isHamster: true },
 
   { id: 'jungarian_ham',   name: '정가리안', emoji: '🐹',
-    category: 'hamster', height: 0.60, color: '#A8D8A8', meshType: 'hamster',
+    category: 'hamster', height: 1.0, color: '#A8D8A8', meshType: 'hamster',
     modelPath: assetPath('/models/jungarian_ham.glb'),
     cardBg: '#F0FFF4', cardBorder: '#FFD700', isHamster: true },
 
   { id: 'pearl_ham',       name: '펄 햄스터', emoji: '🐹',
-    category: 'hamster', height: 0.60, color: '#F4ACB7', meshType: 'hamster',
+    category: 'hamster', height: 1.0, color: '#F4ACB7', meshType: 'hamster',
     modelPath: assetPath('/models/pearl_ham.glb'),
     cardBg: '#FFF5F7', cardBorder: '#FFD700', isHamster: true },
 
   { id: 'roborovskii_ham', name: '로보로브스키', emoji: '🐹',
-    category: 'hamster', height: 0.60, color: '#B39DDB', meshType: 'hamster',
+    category: 'hamster', height: 1.0, color: '#B39DDB', meshType: 'hamster',
     modelPath: assetPath('/models/roborovskii_ham.glb'),
     cardBg: '#F8F0FF', cardBorder: '#FFD700', isHamster: true },
 ]
