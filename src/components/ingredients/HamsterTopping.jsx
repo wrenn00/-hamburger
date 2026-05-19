@@ -1,18 +1,17 @@
-// 🐹 햄스터 GLB — bounding box 정규화 → TARGET_HEIGHT=1.0 (data height와 일치)
-// 바닥이 y=0에 오도록 모델 이동 → bottom-based 스택과 정합
+// 🐹 햄스터 GLB — bounding box 정규화 + scale 0→1 등장 애니메이션
+// [수정] animated.group scale → useRef + useFrame 직접 업데이트
 
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import { useSpring, animated } from '@react-spring/three'
 import * as THREE from 'three'
 
-const TARGET_HEIGHT = 1.0  // data/ingredients.js 의 hamster height와 동일
+const TARGET_HEIGHT = 1.0  // data height 와 일치
 
 function HamsterModel({ modelPath }) {
   const { scene } = useGLTF(modelPath)
 
   useEffect(() => {
-    // 그림자 설정
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true
@@ -20,19 +19,16 @@ function HamsterModel({ modelPath }) {
       }
     })
 
-    // 1) scale 초기화
+    // 스케일 초기화 후 실제 크기 측정
     scene.scale.set(1, 1, 1)
     scene.position.set(0, 0, 0)
 
-    // 2) bounding box로 실제 크기 측정
-    const box = new THREE.Box3().setFromObject(scene)
+    const box  = new THREE.Box3().setFromObject(scene)
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
-
-    // 3) TARGET_HEIGHT에 맞춰 균일 스케일
     if (maxDim > 0) scene.scale.setScalar(TARGET_HEIGHT / maxDim)
 
-    // 4) 정규화 후 바닥을 y=0으로 이동 (bottom-based 정합)
+    // 바닥을 y=0 에 맞춤 (bottom-based 스택과 정합)
     box.setFromObject(scene)
     scene.position.y = -box.min.y
   }, [scene])
@@ -41,21 +37,21 @@ function HamsterModel({ modelPath }) {
 }
 
 export default function HamsterTopping({ modelPath }) {
-  // 뿅! 등장 — scale 0 → 1 spring
-  const [{ s }, api] = useSpring(() => ({
-    s: 0,
-    config: { mass: 0.8, tension: 340, friction: 18 },
-  }))
+  const groupRef = useRef()
+  const scaleRef = useRef(0)  // 0 → 1 로 lerp
 
-  useEffect(() => {
-    api.start({ s: 1 })
-  }, [])
+  useFrame((_, dt) => {
+    if (!groupRef.current) return
+    scaleRef.current += (1 - scaleRef.current) * Math.min(dt * 14, 1)
+    const s = scaleRef.current
+    groupRef.current.scale.set(s, s, s)
+  })
 
   return (
-    <animated.group scale-x={s} scale-y={s} scale-z={s}>
+    <group ref={groupRef}>
       <Suspense fallback={null}>
         <HamsterModel modelPath={modelPath} />
       </Suspense>
-    </animated.group>
+    </group>
   )
 }

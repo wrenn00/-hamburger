@@ -1,20 +1,25 @@
-// 🍔 햄버거 조립체 — bottom-based 스택 + spring drop-in + 클릭 제거
+// 🍔 햄버거 조립체
 //
-// 스택 로직:
-//   baseY = 이전 재료들의 height 누적합 + PLATE_TOP
-//   다음 재료 baseY += def.height
-//   group.position.y = baseY → geometry 바닥이 바로 이전 재료 꼭대기에 닿음
+// [수정] animated.group position-y → useRef + useFrame 직접 업데이트
+//   - animated.group 은 Three.js property 업데이트를 보장하지 않음
+//   - useFrame 에서 groupRef.current.position.y = val 로 직접 세팅
+//
+// [스택 순서]
+//   stack[0] = 도마 바로 위 (가장 아래)
+//   stack[N] = 맨 위
+//   baseY = PLATE_TOP + 이전 재료들 height 누적합
 
-import { useEffect } from 'react'
-import { useSpring, animated } from '@react-spring/three'
+import { useEffect, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { useBurgerStore } from '../store/useBurgerStore'
 import Bun from './ingredients/Bun'
 import Patty from './ingredients/Patty'
 import Lettuce from './ingredients/Lettuce'
 import HamsterTopping from './ingredients/HamsterTopping'
 
-// CuttingBoard: cylinderGeometry args=[2.4, 2.2, 0.16] → 중심 y=0 → 윗면 y=0.08
+// CuttingBoard cylinder height=0.16, center y=0 → top y=0.08
 const PLATE_TOP = 0.08
+export { PLATE_TOP }  // BurgerScene의 CameraRig 에서도 사용
 
 function IngredientMesh({ def }) {
   const { meshType, color, modelPath } = def
@@ -26,36 +31,54 @@ function IngredientMesh({ def }) {
   return <Lettuce meshType={meshType} color={color} />
 }
 
-// ── 레이어: group을 baseY에 위치 → 기하 바닥이 baseY ──────────────────────
+// ── 개별 레이어 ────────────────────────────────────────────────────────────
+// useRef + useFrame spring physics (overshoot 없는 critically-damped 스프링)
 function IngredientLayer({ uid, def, baseY }) {
   const removeIngredient = useBurgerStore((s) => s.removeIngredient)
+  const groupRef = useRef()
 
-  // 햄스터는 제자리 등장(scale spring), 일반 재료는 위에서 낙하
-  const startY = def.isHamster ? baseY : baseY + def.height * 2 + 3
+  // spring state: pos(현재위치), vel(속도), target(목표위치)
+  const spring = useRef({
+    pos: def.isHamster ? baseY : baseY + 5, // 햄스터 = 제자리, 나머지 = 위에서 낙하
+    vel: 0,
+    target: baseY,
+  })
 
-  const [{ posY }, api] = useSpring(() => ({
-    posY: startY,
-    config: { mass: 1.1, tension: 270, friction: 22 },
-  }))
-
+  // baseY 바뀌면 (아래 재료 제거 시) target 업데이트
   useEffect(() => {
-    api.start({ posY: baseY })
+    spring.current.target = baseY
   }, [baseY])
 
+  useFrame((_, dt) => {
+    if (!groupRef.current) return
+    const s = spring.current
+    const clampDt = Math.min(dt, 0.05)
+
+    // k=260 (스프링 강성), b=30 (감쇠) → 거의 critically-damped, 미세 바운스
+    const acc = -260 * (s.pos - s.target) - 30 * s.vel
+    s.vel += acc * clampDt
+    s.pos += s.vel * clampDt
+
+    // 직접 Three.js position 업데이트 (animated.group 없이)
+    groupRef.current.position.y = s.pos
+  })
+
   return (
-    <animated.group
-      position-y={posY}
+    <group
+      ref={groupRef}
       onClick={(e) => { e.stopPropagation(); removeIngredient(uid) }}
     >
       <IngredientMesh def={def} />
-    </animated.group>
+    </group>
   )
 }
 
+// ── 전체 햄버거 ────────────────────────────────────────────────────────────
 export default function Burger() {
   const stack = useBurgerStore((s) => s.stack)
 
-  // 누적 높이 계산: 각 재료 바닥 = 아래 재료들의 height 합산
+  // stack[0] = 도마 바로 위 (baseY=PLATE_TOP)
+  // stack[i+1] = stack[i] 위 (baseY 누적)
   let currentH = PLATE_TOP
   const layers = stack.map(({ uid, def }) => {
     const baseY = currentH

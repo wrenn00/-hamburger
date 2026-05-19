@@ -1,37 +1,52 @@
+// [카메라 전략]
+// - 초기: position(0, 3, 10), target(0, 1.0, 0)으로 도마+버거 전체를 커버
+// - 버거가 쌓일수록 카메라 target.y를 살짝 올리고 (도마 보이게 1/3 수준 유지)
+//   동시에 카메라와 target의 거리(radius)를 늘려서 줌아웃
+// - 이렇게 하면 도마가 화면 아래에 고정되고 버거가 그 위로 자연스럽게 쌓임
+
 import { Suspense, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, ContactShadows, Environment } from '@react-three/drei'
 import { useBurgerStore } from '../store/useBurgerStore'
-import Burger from './Burger'
+import Burger, { PLATE_TOP } from './Burger'
+import * as THREE from 'three'
 
-const PLATE_TOP = 0.08  // CuttingBoard 윗면 (height 0.16 / 2)
-
-// ── 카메라 target을 버거 세로 중앙으로 부드럽게 추적 ──────────────────────
-// OrbitControls.target.y를 버거 높이 절반으로 lerp
-// → 재료가 쌓일수록 카메라가 자동으로 올라가며 전체 스택을 유지
+// ── 카메라 컨트롤러 ────────────────────────────────────────────────────────
 function CameraRig() {
   const controlsRef = useRef()
   const stack = useBurgerStore((s) => s.stack)
 
-  const totalH = stack.reduce((sum, { def }) => sum + def.height, 0)
-  const midY   = PLATE_TOP + totalH / 2  // 버거 세로 중앙
+  const totalH  = PLATE_TOP + stack.reduce((sum, { def }) => sum + def.height, 0)
+  // target은 버거 높이의 1/4 지점 (도마가 항상 화면 하단에 보임)
+  const targetY = Math.max(0.5, totalH * 0.28)
+  // 거리: 버거 높이에 비례해서 줌아웃
+  const radius  = Math.max(7, totalH * 2.0 + 4)
 
   useFrame(() => {
     if (!controlsRef.current) return
-    // lerp speed 0.06 — 부드럽고 빠른 추적
-    controlsRef.current.target.y +=
-      (midY - controlsRef.current.target.y) * 0.06
-    controlsRef.current.update()
+    const c = controlsRef.current
+
+    // 1) target.y lerp
+    c.target.y += (targetY - c.target.y) * 0.05
+
+    // 2) 카메라 → target 방향 벡터 유지하면서 거리 조정
+    const cam    = c.object
+    const offset = cam.position.clone().sub(c.target)
+    const cur    = offset.length()
+    const next   = cur + (radius - cur) * 0.04
+    cam.position.copy(c.target.clone().add(offset.normalize().multiplyScalar(next)))
+
+    c.update()
   })
 
   return (
     <OrbitControls
       ref={controlsRef}
       enablePan={false}
-      minDistance={3}
-      maxDistance={16}
+      minDistance={4}
+      maxDistance={30}
       minPolarAngle={Math.PI / 10}
-      maxPolarAngle={Math.PI / 2.05}
+      maxPolarAngle={Math.PI / 2.1}
       autoRotate
       autoRotateSpeed={0.7}
     />
@@ -39,6 +54,7 @@ function CameraRig() {
 }
 
 // ── 원형 나무 도마 ──────────────────────────────────────────────────────────
+// cylinder height=0.16, center y=0 → 윗면 y=0.08 = PLATE_TOP
 function CuttingBoard() {
   return (
     <group>
@@ -64,7 +80,8 @@ export default function BurgerScene() {
   return (
     <Canvas
       shadows
-      camera={{ position: [0, 4.5, 7], fov: 38 }}
+      // 도마 + 15층 버거가 모두 보이는 초기 위치
+      camera={{ position: [0, 3, 10], fov: 45 }}
       gl={{ alpha: true }}
       style={{ width: '100%', height: '100%' }}
     >
@@ -98,7 +115,6 @@ export default function BurgerScene() {
         <Environment preset="sunset" />
       </Suspense>
 
-      {/* useFrame을 쓰는 컴포넌트는 Canvas 안에서만 사용 가능 */}
       <CameraRig />
     </Canvas>
   )
