@@ -1,6 +1,7 @@
 // 🏆 결과 모달 — 버거 이름 + 점수 + 재료 목록
 
-import { useBurgerStore } from '../store/useBurgerStore'
+import { useMemo } from 'react'
+import { useBurgerStore, getBurgerName, getScore } from '../store/useBurgerStore'
 
 function StarRow({ label, value, emoji }) {
   return (
@@ -19,9 +20,15 @@ function StarRow({ label, value, emoji }) {
 }
 
 export default function ResultModal() {
-  const { stack, showResult, closeResult, reset } = useBurgerStore()
-  const burgerName = useBurgerStore((s) => s.burgerName)
-  const score = useBurgerStore((s) => s.score)
+  const stack       = useBurgerStore((s) => s.stack)
+  const showResult  = useBurgerStore((s) => s.showResult)
+  const closeResult = useBurgerStore((s) => s.closeResult)
+  const reset       = useBurgerStore((s) => s.reset)
+
+  // useMemo로 감싸서 stack 참조가 바뀔 때만 재계산
+  // → selector가 새 객체를 반환하지 않으므로 무한 루프 없음
+  const burgerName = useMemo(() => getBurgerName(stack), [stack])
+  const score      = useMemo(() => getScore(stack),      [stack])
 
   if (!showResult) return null
 

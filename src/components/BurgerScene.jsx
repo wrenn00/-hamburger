@@ -40,6 +40,7 @@ function CuttingBoard() {
 function CompletionSpin({ onDone }) {
   const controlsRef = useRef()
   const elapsed = useRef(0)
+  const doneCalled = useRef(false)  // 중복 호출 방지
 
   useFrame((_, delta) => {
     elapsed.current += delta
@@ -47,7 +48,8 @@ function CompletionSpin({ onDone }) {
       controlsRef.current.autoRotate = true
       controlsRef.current.autoRotateSpeed = 180
     }
-    if (elapsed.current >= 2.2) {
+    if (elapsed.current >= 2.2 && !doneCalled.current) {
+      doneCalled.current = true
       onDone()
     }
   })
